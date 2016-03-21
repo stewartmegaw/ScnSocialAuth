@@ -80,6 +80,10 @@ class HybridAuth extends AbstractAdapter implements ServiceManagerAwareInterface
             $hybridAuth = $this->getHybridAuth();
             $adapter = $hybridAuth->authenticate($provider);
             $userProfile = $adapter->getUserProfile();
+            
+            // EDIT STEWART MEGAW 12/3/16
+            // Trigger event so can manually check if permissions have been given
+            $this->getEventManager()->trigger('auth.checkperms', $this, array('adapter' => $adapter, 'userProfile' => $userProfile));
         } catch (\Exception $ex) {
             $authEvent->setCode(Result::FAILURE)
               ->setMessages(array('Invalid provider'));
@@ -110,6 +114,9 @@ class HybridAuth extends AbstractAdapter implements ServiceManagerAwareInterface
                 try {
                     $localUser = $this->$method($userProfile);
                 } catch (Exception\RuntimeException $ex) {
+                    // EDIT STEWART MEGAW 12/3/16
+                    $this->getEventManager()->trigger('auth.emailnotverified', $this, array('adapter' => $adapter));
+                    
                     $authEvent->setCode($ex->getCode())
                         ->setMessages(array($ex->getMessage()))
                         ->stopPropagation();
